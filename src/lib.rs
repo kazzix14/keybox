@@ -1,4 +1,5 @@
 use bs58;
+use itertools::Itertools;
 use sha3::{digest::*, Shake256};
 
 // Bitcoin style
@@ -20,13 +21,26 @@ impl KeyGenerator {
         }
     }
 
-    pub fn gen(&mut self, nickname: String, key_length: usize) -> String {
+    pub fn gen(
+        &mut self,
+        nickname: String,
+        key_length: usize,
+        additional_characters: Vec<char>,
+    ) -> String {
         let password_digest = &self.password_digest;
         let source = key_length.to_string() + password_digest + &nickname;
         self.hasher.update(source);
         let result = self.hasher.finalize_boxed_reset(64);
         let mut encoded = bs58::encode(result.into_vec()).into_string();
         encoded.truncate(key_length);
+        let char_counts = encoded.chars().counts();
+        for (from, to) in char_counts
+            .into_iter()
+            .sorted()
+            .zip(additional_characters.into_iter())
+        {
+            encoded = encoded.replace(&String::from(from.0), &String::from(to));
+        }
         encoded
     }
 }
@@ -42,6 +56,7 @@ mod test {
         let key = key_gen.gen(
             String::from("nickname of a service or something that I can remember"),
             key_length,
+            vec!['!', '#'],
         );
 
         // source : `My very very long rememberable password!!!!!`
@@ -55,7 +70,10 @@ mod test {
 
         // key is first {key_length} characters of base58
         // key : `4X6Lbepf8fUz9Sa6`
+        // if additional characters are specified, characters in key is replaced from small(in ascii code) character.
+        // numbers -> capital letters -> small letters
+        // key : `!X#Lbepf8fUz9Sa#`
 
-        assert_eq!(key, "4X6Lbepf8fUz9Sa6");
+        assert_eq!(key, "!X#Lbepf8fUz9Sa#");
     }
 }
