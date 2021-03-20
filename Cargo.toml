@@ -1,6 +1,8 @@
 [package]
 authors = ["Kazzix <kazzix14@gmail.com>"]
+description = "Secure key generator and management tool. Keys looks like random, but they're reproducible using just one password and nickname of keys even without this software."
 edition = "2018"
+license = "MPL-2.0"
 name = "keybox"
 version = "0.1.0"
 
